@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>How the Moon Looked When I Was Born</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 520px;
+            margin: 40px auto 0 auto;
+            background: #0e1a2b;
+            color: #fff;
+            text-align: center;
+            border-radius:12px;
+            padding:30px;
+            position: relative;
+            overflow-x: hidden;
+            min-height: 670px;
+        }
+        h1 {
+            margin-bottom: 0.3em;
+        }
+        input, button {
+            padding: 0.6em;
+            font-size: 1.1em;
+            border-radius: 5px;
+            border: none;
+            margin-bottom:1em;
+            margin-top:0.5em;
+        }
+        #result {
+            margin-top: 18px;
+            font-size: 1.1em;
+        }
+        #no-moon-label {
+            margin-top: 10px;
+            color: #ffe366;
+            font-weight: bold;
+            font-size: 1.17em;
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px #422;
+            display: none;
+        }
+        #moon-canvas {
+            margin: 30px auto 0 auto;
+            display: block;
+            background: transparent;
+            box-shadow: 0 0 36px #19305d88;
+        }
+        .credit-animated {
+            width: 100vw;
+            font-size: 1.13em;
+            letter-spacing: 1.2px;
+            color: #c9ddff;
+            position: fixed;
+            left: 0;
+            bottom: 10px;
+            text-align: center;
+            pointer-events: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            text-shadow: 0 0 6px #9ee4ff, 0 0 2px #2196f388;
+            background: none;
+            z-index: 100;
+        }
+        /* Sparkling stars effect */
+        .star {
+            position: absolute;
+            border-radius: 50%;
+            background: white;
+            animation: twinkle 2s infinite;
+        }
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.9; transform: scale(1);}
+            60% { opacity: 0.3; transform: scale(0.62);}
+        }
+    </style>
+</head>
+<body>
+    <h1>How the Moon Looked When I Was Born</h1>
+    <p>Enter your date of birth to see an accurate:</p>
+    <input type="date" id="dob" max="2025-07-27">
+    <button onclick="animateToSelectedPhase()">Show Moon Phase</button>
+    <div id="result"></div>
+    <div id="no-moon-label">No Moon Day</div>
+    <canvas id="moon-canvas" width="330" height="330"></canvas>
+    <div class="credit-animated" id="credit"></div>
+    <script>
+        // Star field
+        function createStars(num) {
+            for (let i = 0; i < num; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                let size = Math.random() * 2.2 + 0.8;
+                star.style.width = star.style.height = size + "px";
+                star.style.top = Math.random() * 93 + "%";
+                star.style.left = Math.random() * 100 + "%";
+                star.style.backgroundColor = 'white';
+                star.style.opacity = Math.random() * 0.75 + 0.2;
+                star.style.filter = `blur(${Math.random()*1.5}px)`;
+                star.style.animationDelay = Math.random() * 2.3 + "s";
+                document.body.appendChild(star);
+            }
+        }
+        createStars(80);
+
+        // Moon phase names
+        const phases = [
+            "New Moon", "Waxing Crescent", "First Quarter", "Waxing Gibbous",
+            "Full Moon", "Waning Gibbous", "Last Quarter", "Waning Crescent"
+        ];
+
+        function getMoonPhaseFraction(date) {
+            var knownNewMoon = new Date(Date.UTC(2000, 0, 6, 18, 14)).getTime();
+            var msPerDay = 86400000;
+            var synodicMonth = 29.53059;
+            var daysSinceNew = ((date.getTime() - knownNewMoon) / msPerDay);
+            var currentPhase = (daysSinceNew % synodicMonth) / synodicMonth;
+            if (currentPhase < 0) currentPhase += 1;
+            return currentPhase;
+        }
+        function getMoonPhaseIndex(phase) {
+            return Math.floor((phase*8) + 0.5) % 8;
+        }
+
+        function draw3DMoon(ctx, phase, frame=0){
+            ctx.clearRect(0, 0, 330, 330);
+            let x = 165, y = 165, r = 120;
+            let threshold = 0.025;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, r+9, 0, Math.PI*2);
+            ctx.lineWidth = 11;
+            ctx.shadowBlur = 22;
+            ctx.strokeStyle = "rgba(220,230,255,0.23)";
+            ctx.shadowColor = "#fff";
+            ctx.stroke();
+            ctx.restore();
+
+            if (phase < threshold || phase > 1-threshold) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI*2);
+                ctx.fillStyle = "#05071b";
+                ctx.shadowColor = "rgba(255,255,255,0.15)";
+                ctx.shadowBlur = 14 + 7*Math.abs(Math.sin(frame/34));
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.restore();
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI*2);
+                ctx.lineWidth = 4.7;
+                ctx.strokeStyle = "#fff";
+                ctx.globalAlpha = 0.95;
+                ctx.stroke();
+                ctx.globalAlpha = 1;
+                return;
+            }
+
+            var grad = ctx.createRadialGradient(x-28, y-38, r*0.6, x, y, r);
+            grad.addColorStop(0, "#fcfcff");
+            grad.addColorStop(0.68, "#e6e8f4");
+            grad.addColorStop(1, "#c7ccdd");
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2);
+            ctx.fillStyle = grad;
+            ctx.shadowColor = "rgba(180,220,255,0.22)";
+            ctx.shadowBlur = 14 + 7*Math.abs(Math.sin(frame/26));
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI*2); ctx.clip();
+            var theta = phase * 2 * Math.PI;
+            ctx.globalCompositeOperation = "destination-out";
+            ctx.beginPath();
+            let c = Math.abs(Math.cos(theta));
+            let dX = (phase <= 0.5) ? -2*r*c : 2*r*c;
+            ctx.ellipse(x + dX, y, r, r, 0, 0, Math.PI*2, false);
+            ctx.fillStyle = "rgba(25,28,46,0.97)";
+            ctx.fill();
+            ctx.globalCompositeOperation = "source-over";
+            ctx.restore();
+
+            for(let i=0;i<8;i++){
+                let ang = Math.PI/4*i + frame/110, rr = 41+8*(i%3);
+                let cx = x + Math.cos(ang)*rr, cy = y + Math.sin(ang)*rr;
+                ctx.beginPath();
+                ctx.arc(cx, cy, 5+ (i%2)*2, 0, Math.PI*2);
+                ctx.fillStyle = "rgba(180,190,230,0.3)";
+                ctx.fill();
+            }
+        }
+
+        let currentPhase = 0;
+        let targetPhase = 0;
+        let animating = false;
+        let frame = 0;
+
+        function animateToSelectedPhase(){
+            let dobInput = document.getElementById("dob").value;
+            let noMoonLabel = document.getElementById("no-moon-label");
+            if (!dobInput){
+                document.getElementById("result").innerText = "Please enter a date.";
+                noMoonLabel.style.display = "none";
+                return;
+            }
+            let date = new Date(dobInput + "T12:00:00");
+            let phaseFrac = getMoonPhaseFraction(date);
+            let phaseIndex = getMoonPhaseIndex(phaseFrac);
+            let threshold = 0.025;
+            let isNoMoon = (phaseFrac < threshold || phaseFrac > 1-threshold);
+            let phaseName = isNoMoon ?
+                "New Moon (No Moon Day)" : phases[phaseIndex];
+            document.getElementById("result").innerHTML =
+                `<strong>Date:</strong> ${date.toDateString()}<br><strong>Moon Phase:</strong> ${phaseName}`;
+            targetPhase = phaseFrac;
+            animating = true;
+            // Show or hide No Moon label
+            noMoonLabel.style.display = isNoMoon ? "block" : "none";
+        }
+
+        function animateMoon(){
+            const canvas = document.getElementById('moon-canvas');
+            const ctx = canvas.getContext('2d');
+            if (animating) {
+                let diff = (targetPhase - currentPhase + 1) % 1;
+                if (diff > 0.5) diff -= 1;
+                if (Math.abs(diff) < 0.004){
+                    currentPhase = targetPhase;
+                    animating = false;
+                } else {
+                    currentPhase = (currentPhase + diff * 0.12 + 1) % 1;
+                }
+            }
+            draw3DMoon(ctx, currentPhase, frame);
+            frame++;
+            requestAnimationFrame(animateMoon);
+        }
+
+        // Animated typewriter credit
+        function animateCreditText() {
+            const text = "done by Kamalavarshini Ramesh :)";
+            const el = document.getElementById('credit');
+            let idx = 0;
+            el.innerHTML = "";
+            el.style.visibility = "visible";
+            function typeEffect() {
+                if (idx <= text.length) {
+                    el.innerHTML = text.substring(0, idx);
+                    idx++;
+                    setTimeout(typeEffect, 80);
+                }
+            }
+            typeEffect();
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            let today = new Date();
+            currentPhase = getMoonPhaseFraction(today);
+            targetPhase = currentPhase;
+            animateMoon();
+            animateCreditText();
+        });
+    </script>
+</body>
+</html>
